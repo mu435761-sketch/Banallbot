@@ -7,7 +7,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-TOKEN = os.environ["8885117959:AAGlPm6ncqDU5gTqFC0ElvPXJQZf_fqfINQ"]
+TOKEN = os.environ["BOT_TOKEN"]
 SUDO_ID = 5029489287 # Apni Telegram user ID
 
 
