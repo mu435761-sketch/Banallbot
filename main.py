@@ -1,48 +1,82 @@
-import asyncio
+
+import os
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+)
 
-# 1. Yahan apna BotFather se mila Token paste karo (Quotes ke andar)
-TOKEN = "8885117959:AAGlPm6ncqDU5gTqFC0ElvPXJQZf_fqfINQ"
+TOKEN = os.environ["BOT_TOKEN"]
+SUDO_ID = 123456789  # Apni Telegram user ID
 
-# 2. Yahan apni Telegram ID daalo (Number ke saath)
-SUDO_ID = 5029489287  # Apni ID yahan daalo
 
-async def ban_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != SUDO_ID:
-        await update.message.reply_text("❌ You are not authorized!")
+async def is_authorized(update: Update) -> bool:
+    return (
+        update.effective_user is not None
+        and update.effective_user.id == SUDO_ID
+    )
+
+
+async def start(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    await update.effective_message.reply_text(
+        "Bot is running!\n"
+        "Use /id to check your Telegram user ID."
+    )
+
+
+async def get_id(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    await update.effective_message.reply_text(
+        f"Your Telegram ID: {update.effective_user.id}"
+    )
+
+
+async def ban_reply(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not await is_authorized(update):
+        await update.effective_message.reply_text(
+            "Not authorized."
+        )
         return
 
-    chat_id = update.effective_chat.id
-    await update.message.reply_text("🚫 Banning all members...")
+    message = update.effective_message
+    if not message.reply_to_message:
+        await message.reply_text(
+            "Kisi member ke message par reply karke /ban use karo."
+        )
+        return
+
+    target = update.effective_message.reply_to_message.from_user
+    if target is None:
+        await message.reply_text("User identify nahi hua.")
+        return
 
     try:
-        members = await context.bot.get_chat_members(chat_id)
-        count = 0
-        for member in members:
-            if member.user.is_bot or member.status == 'administrator':
-                continue
-            try:
-                await context.bot.ban_chat_member(chat_id, member.user.id)
-                count += 1
-                await asyncio.sleep(0.5) 
-            except Exception:
-                pass
-        
-        await update.message.reply_text(f"✅ Successfully banned {count} members.")
+        await context.bot.ban_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target.id,
+        )
+        await message.reply_text("Member banned.")
+    except Exception as exc:
+        await message.reply_text(f"Ban failed: {exc}")
 
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! Use /banall to ban all users.")
 
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("banall", ban_all))
+    app.add_handler(CommandHandler("id", get_id))
+    app.add_handler(CommandHandler("ban", ban_reply))
     print("Bot is running...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
