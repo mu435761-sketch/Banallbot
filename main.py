@@ -71,14 +71,14 @@ async def ban_reply(
 
 def main():
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("id", get_id))
     app.add_handler(CommandHandler("ban", ban_reply))
+
     print("Bot is running...")
     app.run_polling()
 
 
-
 if __name__ == "__main__":
-    main()
-    
+    main()    
